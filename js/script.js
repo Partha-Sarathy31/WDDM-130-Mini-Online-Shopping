@@ -302,3 +302,99 @@ function showErrors(errors) {
 
   formErrorsEl.innerHTML = `<ul>${errors.map((e) => `<li>${e.message}</li>`).join("")}</ul>`;
 }
+
+
+/* 7. Receipt generation */
+function generateReceiptNumber() {
+  const stamp = Date.now().toString().slice(-6);
+  const random = Math.floor(Math.random() * 90 + 10); // 2-digit random
+  return `MC-${stamp}${random}`;
+}
+
+function renderReceipt(values) {
+  const lines = getCartLines();
+  const { subtotal, discount, tax, total } = calculateTotals();
+  const receiptNumber = generateReceiptNumber();
+  const now = new Date();
+
+  const itemRows = lines
+    .map(
+      ({ product, qty }) => `
+      <div class="receipt-item-row">
+        <span class="receipt-item-name">${product.name} &times;${qty}</span>
+        <span>${formatCurrency(product.price * qty)}</span>
+      </div>`
+    )
+    .join("");
+
+  receiptContent.innerHTML = `
+    <p class="receipt-store">Maple &amp; Co.</p>
+    <p class="receipt-sub">Mini Online Store</p>
+    <hr class="receipt-divider" />
+    <div class="receipt-row"><span>Receipt #</span><span>${receiptNumber}</span></div>
+    <div class="receipt-row"><span>Date</span><span>${now.toLocaleDateString()}</span></div>
+    <div class="receipt-row"><span>Time</span><span>${now.toLocaleTimeString()}</span></div>
+    <hr class="receipt-divider" />
+    <div class="receipt-row"><span>Customer</span><span>${values.fullName}</span></div>
+    <div class="receipt-row"><span>Email</span><span>${values.email}</span></div>
+    <div class="receipt-row"><span>Ship to</span><span>${values.address}, ${values.city} ${values.province}</span></div>
+    <div class="receipt-row"><span>Postal</span><span>${values.postalCode}</span></div>
+    <hr class="receipt-divider" />
+    ${itemRows}
+    <hr class="receipt-divider" />
+    <div class="receipt-row"><span>Subtotal</span><span>${formatCurrency(subtotal)}</span></div>
+    ${discount > 0 ? `<div class="receipt-row"><span>Discount (${appliedPromo.code})</span><span>&minus;${formatCurrency(discount)}</span></div>` : ""}
+    <div class="receipt-row"><span>HST (13%)</span><span>${formatCurrency(tax)}</span></div>
+    <div class="receipt-row receipt-total-row"><span>Total</span><span>${formatCurrency(total)}</span></div>
+    <p class="receipt-confirmation">Thank you for shopping with us!</p>
+    <p class="receipt-meta">Keep this receipt for your records.</p>
+  `;
+
+  receiptSection.hidden = false;
+  receiptSection.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+
+
+/* Order reset — clears the cart and form so a new order can begin */
+function resetOrder() {
+  Object.keys(cart).forEach((id) => delete cart[id]);
+  appliedPromo = null;
+  promoInput.value = "";
+  promoMessage.textContent = "";
+  checkoutForm.reset();
+  showErrors([]);
+  receiptSection.hidden = true;
+  renderProducts();
+  renderCart();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+checkoutForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+
+  const values = {
+    fullName: document.getElementById("full-name").value,
+    email: document.getElementById("email").value,
+    phone: document.getElementById("phone").value,
+    address: document.getElementById("address").value,
+    city: document.getElementById("city").value,
+    province: document.getElementById("province").value,
+    postalCode: document.getElementById("postal-code").value,
+  };
+
+  const errors = validateForm(values);
+  showErrors(errors);
+
+  if (errors.length === 0) {
+    renderReceipt(values);
+    Object.keys(cart).forEach((id) => delete cart[id]);
+    appliedPromo = null;
+    renderProducts();
+    renderCart();
+  } else {
+    formErrorsEl.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+});
+
+startNewOrderBtn.addEventListener("click", resetOrder);
