@@ -241,3 +241,64 @@ productGrid.addEventListener("input", (e) => {
 renderProducts();
 renderCart();
 
+
+/* 6. Checkout form validation */
+function validateForm(values) {
+  const errors = [];
+
+  if (!values.fullName.trim()) {
+    errors.push({ field: "full-name", message: "Full name is required." });
+  }
+
+  // Assignment minimum rule: email must contain "@" and "."
+  if (!values.email.includes("@") || !values.email.includes(".")) {
+    errors.push({ field: "email", message: "Enter a valid email address (must contain @ and .)." });
+  }
+
+  const digitsOnly = values.phone.replace(/\D/g, "");
+  if (digitsOnly.length !== 10) {
+    errors.push({ field: "phone", message: "Phone number must contain exactly 10 digits." });
+  }
+
+  if (!values.address.trim()) {
+    errors.push({ field: "address", message: "Address is required." });
+  }
+
+  if (!values.city.trim()) {
+    errors.push({ field: "city", message: "City is required." });
+  }
+
+  if (!values.province) {
+    errors.push({ field: "province", message: "Please select a province." });
+  }
+
+  const postalPattern = /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/;
+  if (!postalPattern.test(values.postalCode.trim())) {
+    errors.push({ field: "postal-code", message: "Postal code must be in Canadian format, e.g. A1A 1A1." });
+  }
+
+  if (getCartLines().length === 0) {
+    errors.push({ field: null, message: "Your cart is empty. Add at least one item before checking out." });
+  }
+
+  return errors;
+}
+
+function showErrors(errors) {
+  // Clear old error highlighting
+  document.querySelectorAll(".field.has-error").forEach((el) => el.classList.remove("has-error"));
+
+  if (errors.length === 0) {
+    formErrorsEl.innerHTML = "";
+    return;
+  }
+
+  errors.forEach((err) => {
+    if (err.field) {
+      const input = document.getElementById(err.field);
+      if (input) input.closest(".field")?.classList.add("has-error");
+    }
+  });
+
+  formErrorsEl.innerHTML = `<ul>${errors.map((e) => `<li>${e.message}</li>`).join("")}</ul>`;
+}
