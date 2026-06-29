@@ -398,3 +398,46 @@ checkoutForm.addEventListener("submit", (e) => {
 });
 
 startNewOrderBtn.addEventListener("click", resetOrder);
+
+
+/* 8. Promo codes (Bonus Feature - 1 */
+function applyPromoCode() {
+  const code = promoInput.value.trim().toUpperCase();
+
+  if (!code) {
+    appliedPromo = null;
+    promoMessage.textContent = "";
+    renderCart();
+    return;
+  }
+
+  if (PROMO_CODES[code]) {
+    appliedPromo = { code, rate: PROMO_CODES[code] };
+    promoMessage.textContent = `Code "${code}" applied: ${PROMO_CODES[code] * 100}% off.`;
+    promoMessage.className = "promo-message is-success";
+  } else {
+    appliedPromo = null;
+    promoMessage.textContent = "That promo code isn't valid.";
+    promoMessage.className = "promo-message is-error";
+  }
+
+  renderCart();
+}
+
+
+
+/* 9. Sorting / filtering (Bonus Feature - 2) */
+function handleSortChange(e) {
+  sortValue = e.target.value;
+  renderProducts();
+}
+
+function handleSearchInput(e) {
+  searchValue = e.target.value;
+  renderProducts();
+}
+
+
+sortSelect.addEventListener("change", handleSortChange);
+searchInput.addEventListener("input", handleSearchInput);
+promoApplyBtn.addEventListener("click", applyPromoCode);
