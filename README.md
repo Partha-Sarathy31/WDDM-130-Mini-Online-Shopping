@@ -2,8 +2,8 @@
 
 WDDM130 — Project 1 submission. A client-side-only mini online store built with plain HTML, CSS, and JavaScript — no frameworks, no backend, no database.
 
-**Live site:** add your GitHub Pages link here
-**Repository:** add your repo link here
+**Live site:** https://github.com/Partha-Sarathy31/WDDM-130-Mini-Online-Shopping
+**Repository:** https://partha-sarathy31.github.io/WDDM-130-Mini-Online-Shopping/
 
 ## Features
 
