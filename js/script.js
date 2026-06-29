@@ -129,3 +129,115 @@ function renderProducts() {
 }
 
 renderProducts();
+
+/* 5. Render: cart + totals */
+function getCartLines() {
+  return Object.entries(cart)
+    .map(([id, qty]) => ({ product: getProductById(Number(id)), qty }))
+    .filter((line) => line.qty > 0 && line.product);
+}
+
+function calculateTotals() {
+  const lines = getCartLines();
+  const subtotal = lines.reduce((sum, line) => sum + line.product.price * line.qty, 0);
+  const discount = appliedPromo ? subtotal * appliedPromo.rate : 0;
+  const taxableAmount = subtotal - discount;
+  const tax = taxableAmount * TAX_RATE;
+  const total = taxableAmount + tax;
+  return { subtotal, discount, tax, total };
+}
+
+function renderCart() {
+  const lines = getCartLines();
+  const totalItemCount = lines.reduce((sum, line) => sum + line.qty, 0);
+  headerCartCount.textContent = String(totalItemCount);
+
+  if (lines.length === 0) {
+    cartItemsEl.innerHTML = "";
+    cartEmptyMessage.hidden = false;
+  } else {
+    cartEmptyMessage.hidden = true;
+    cartItemsEl.innerHTML = lines
+      .map(({ product, qty }) => {
+        const lineTotal = product.price * qty;
+        return `
+          <div class="cart-item">
+            <span class="cart-item-name">${product.name}</span>
+            <span class="cart-item-line-total">${formatCurrency(lineTotal)}</span>
+            <span class="cart-item-meta">${qty} &times; ${formatCurrency(product.price)}</span>
+            <span></span>
+          </div>
+        `;
+      })
+      .join("");
+  }
+
+  const { subtotal, discount, tax, total } = calculateTotals();
+  subtotalAmountEl.textContent = formatCurrency(subtotal);
+  taxAmountEl.textContent = formatCurrency(tax);
+  totalAmountEl.textContent = formatCurrency(total);
+
+  if (discount > 0) {
+    discountRowEl.hidden = false;
+    discountAmountEl.textContent = "\u2212" + formatCurrency(discount);
+  } else {
+    discountRowEl.hidden = true;
+  }
+}
+
+
+
+/* Quantity changes (shared by +/- buttons and direct input typing) */
+function setQuantity(id, rawValue) {
+  const product = getProductById(id);
+  if (!product) return;
+
+  let qty = Math.floor(Number(rawValue));
+  if (Number.isNaN(qty) || qty < 0) qty = 0;
+  if (qty > product.stock) qty = product.stock; // enforce stock limit
+
+  if (qty === 0) {
+    delete cart[id];
+  } else {
+    cart[id] = qty;
+  }
+
+  // Re-rendering replaces every product card's HTML, which would normally
+  // steal focus away from the input the user is actively typing in.
+  // Remember it here and restore it after the re-render.
+  const active = document.activeElement;
+  const wasFocusedId = active && active.classList.contains("qty-input") ? active.dataset.id : null;
+
+  renderProducts();
+  renderCart();
+
+  if (wasFocusedId) {
+    const input = productGrid.querySelector(`.qty-input[data-id="${wasFocusedId}"]`);
+    if (input) {
+      input.focus();
+      const cursorPos = input.value.length;
+      input.setSelectionRange(cursorPos, cursorPos);
+    }
+  }
+}
+
+
+productGrid.addEventListener("click", (e) => {
+  const btn = e.target.closest(".qty-btn");
+  if (!btn) return;
+
+  const id = Number(btn.dataset.id);
+  const current = cart[id] || 0;
+  const delta = btn.dataset.action === "increment" ? 1 : -1;
+  setQuantity(id, current + delta);
+});
+
+productGrid.addEventListener("input", (e) => {
+  const input = e.target.closest(".qty-input");
+  if (!input) return;
+  setQuantity(Number(input.dataset.id), input.value);
+});
+
+renderProducts();
+renderCart();
+
